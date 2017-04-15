@@ -16,10 +16,6 @@
         "tts",
         "storage"
     ],
-    "background": {
-        "scripts": ["eventPage.js"],
-        "persistent": false
-    },
     "content_scripts":[
         {
             "matches":[
