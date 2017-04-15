@@ -1,0 +1,33 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <script src="popup.js" type="text/javascript" charset="UTF-8"></script>
+</head>
+<body style="width: 100%">
+
+    <table>
+        <tr>
+            <th>Voice</th>
+            <th><select id="voiceDropdown"></select></th>
+        </tr>     
+        <tr>
+            <th>Pitch</th>
+            <th><input id="pitchInput" type="range" min="0" max="2" step="0.1"></input></th>
+            <th><output id="pitchValue">0</output>
+        </tr>
+        <tr>
+            <th>Rate</th>
+            <th><input id="rateInput" type="range" min="0" max="2" step="0.1"></input></th>
+            <th><output id="rateValue">0</output>
+        </tr>
+        <tr>
+            <th>Volume</th>
+            <th><input id="volumeInput" type="range" min="0" max="1" step="0.01"></input></th>
+            <th><output id="volumeValue">0</output>
+        </tr>
+    </table>
+    <hr>
+    <h4>Advanced Options:</h4>
+    querySelector: <input id="querySelectorInput" type="text"></input>
+</body>
+</html>
