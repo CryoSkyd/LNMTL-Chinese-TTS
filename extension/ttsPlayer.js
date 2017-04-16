@@ -18,46 +18,61 @@ class TTSPlayer {
         this._volume = 1;
 
         this._currentIndex = 0;
+
         this._refreshId;
+        this._playbackInstanceId = 0;
 
         this._isPlaying = false;
+        this._playbackPromise;
 
         // Event listeners
         this._onstart = null;
         this._onend = null;
     }
 
-    playNext() {
-        this._speak(this._currentIndex, function() {
-            this._currentIndex += 1;
-        });
-    }
+    play() {
+        // TODO: 
+        this.reset();
 
-    play() {        
+        // Generate new playbackInstanceId. This allows us to prevent previous continuous playback
+        // instances from continuing to run.
+        this._playbackInstanceId++;
+        var cachedInstanceId = this._playbackInstanceId;
+        
         // Use variable to bind function
-        var initiatePlay = function() {
+        var playNext = function() {            
             if (this._currentIndex < this._textList.length && this._isPlaying) {
                 // Notify onstart listener
                 if (this._onstart) {
                     this._onstart(this._currentIndex);
                 }
                 
-                console.log("ttsPlayer - Playing index " + this._currentIndex);
-                this._speak(this._textList[this._currentIndex], function onend() {
+                console.log("ttsPlayer - Playing index " + this._currentIndex);                
+                var cachedIndex = this._currentIndex;
+                this._speak(this._textList[this._currentIndex], function onend() {                    
                     // Notify onend listener
                     if (this._onend) {
-                        this._onend(this._currentIndex);
+                        this._onend(cachedIndex);
+                    }
+
+                    // onend triggers for completion and also cancels.
+                    // We need to know if a new playback instance started so we can
+                    // cancel this continuous playback chain properly
+                    if (cachedInstanceId != this._playbackInstanceId) {
+                        return;
                     }
 
                     // Continuous play
                     this._currentIndex += 1;
-                    setTimeout(initiatePlay, PLAY_NEXT_DELAY);
+                    setTimeout(playNext, PLAY_NEXT_DELAY);
                 }.bind(this));
-            }            
+            }
         }.bind(this);
 
         this._isPlaying = true;
-        initiatePlay();
+
+        // Run on next schedule to allow previously reset sequence to end.
+        setTimeout(playNext, 0);
     }
 
     playAt(index) {
