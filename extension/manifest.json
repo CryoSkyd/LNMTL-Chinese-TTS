@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "LNMTL-TTS",
     "description": "This extension adds TTS functionality for the LNMTL website",
-    "version": "0.1",
+    "version": "0.1.4",
     "icons": {
         "128": "icon.png"
     },

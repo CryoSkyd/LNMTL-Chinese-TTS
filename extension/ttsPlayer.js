@@ -1,6 +1,6 @@
 // Constants
 const PLAY_NEXT_DELAY = 200;
-const REFRESH_INTERVAL = 500;
+const REFRESH_INTERVAL = 1000;
 
 // Utility functions
 function isNumeric(x) {
@@ -105,7 +105,7 @@ class TTSPlayer {
 
     speak(text, onend) {
         this._isPlaying = false;
-        _speak(text, onend);
+        this._speak(text, onend);
     }
 
     _speak(text, onend) {
@@ -129,6 +129,14 @@ class TTSPlayer {
 
         utter.onstart = function (e) {
             console.log("ttsPlayer - Starting: " + e.utterance.text);
+            // There's a bug where sometimes speechSynthesis is playing the same text over and over
+            // Try to prevent duplicate playbacks by calling cancel when duplicate is discovered
+            if (this.alreadyPlayed) {
+                speechSynthesis.cancel();
+                console.log("ttsPlayer - REPEAT ENCOUNTERED - Skipping");
+            }
+            this.alreadyPlayed = true;
+
             speechSynthesisRefresher();
         }
 
@@ -153,8 +161,12 @@ class TTSPlayer {
             console.log("ttsPlayer - Pause");
             clearTimeout(this._refreshId);
         }
-
-        speechSynthesis.speak(utter);
+        
+        // Another bug? 
+        // Possibly related to: http://stackoverflow.com/questions/23483990/speechsynthesis-api-onend-callback-not-working/33987377
+        setTimeout(function() {
+            speechSynthesis.speak(utter)
+        }, 50);
 
         // There's a bug where SpeechSynthesis stops working if the text lasts longer than X seconds (15 seconds?). The solution is to never
         // let SpeechSynthesis run for that long by setting an interval to continuously pause/resume until speech is complete.
@@ -162,7 +174,6 @@ class TTSPlayer {
             if (!this._isPaused) {
                 speechSynthesis.resume();
             }
-            //speechSynthesis.pause();            
             this._refreshId = setTimeout(speechSynthesisRefresher, REFRESH_INTERVAL);
         }.bind(this);
     }

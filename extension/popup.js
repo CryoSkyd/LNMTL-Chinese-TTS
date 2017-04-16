@@ -42,6 +42,7 @@
             }
         }
 
+        window.voiceDropdown.innerHTML = "";
         for (let v of voices) {
             shouldSelect = false;
             if (current_settings.lang == v.lang && current_settings.voice == v.name) {
