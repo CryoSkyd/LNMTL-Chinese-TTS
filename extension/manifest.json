@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
-    "name": "LNMTL-Chinese-TTS",
-    "description": "This extension adds Chinese TTS functionality for the LNMTL website",
+    "name": "LNMTL-TTS",
+    "description": "This extension adds TTS functionality for the LNMTL website",
     "version": "0.1",
     "icons": {
         "128": "icon.png"
@@ -18,10 +18,11 @@
     ],
     "content_scripts":[
         {
-            "matches":[
-                "https://lnmtl.com/*"
-            ],
-            "js": ["content.js"]
+            "matches":["https://lnmtl.com/*"],
+            "js": [
+                "ttsPlayer.js",
+                "content.js"
+            ]
         }
     ],
     "web_accessible_resources": ["play_icon.png"]

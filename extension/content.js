@@ -1,4 +1,3 @@
-
 (function () {
     // Check for tts compatibility
     if (!('speechSynthesis' in window)) {
@@ -24,13 +23,36 @@
         injectAudioButtons();
     });
 
+
+    // Global variables
+    var SENTENCES;
+    var player;
     
     function injectAudioButtons() {
         // Find all chinese sentences
-        var sentences = document.querySelectorAll(extensionSettings.query);
+        SENTENCES = document.querySelectorAll(extensionSettings.query);
+        var textList = [];
+        for (let s of SENTENCES) {
+            textList.push(s.textContent);
+        }
+
+        // Create player
+        player = new TTSPlayer(textList);
+        player.lang = extensionSettings.lang;
+        player.voice = extensionSettings.voice;
+        player.pitch = extensionSettings.pitch;
+        player.rate = extensionSettings.rate;
+        player.volume = extensionSettings.volume;
+        player.onstart = function scrollAndHighlight(index) {
+            scrollToCenter(SENTENCES[index]);
+            SENTENCES[index].style.border = "gold solid";
+        }
+        player.onend = function removeHighlight(index) {
+            SENTENCES[index].style.border = "";
+        }
 
         // Use let to ensure the 'sentence' var is locally scoped and passed in to binding functions
-        for (let sentence of sentences) {
+        for (let sentence of SENTENCES) {
             var button = document.createElement("input");
             //button.style.backgroundImage = "url('" + chrome.extension.getURL("play_icon.png") + "')";
             button.type = "image";
@@ -38,85 +60,43 @@
             button.style.width = "1em"
             button.src = chrome.extension.getURL("play_icon.png");
             button.onclick = function() {
-                speak(sentence.textContent);
+                //speak(sentence.textContent);
+                player.speak(sentence.textContent);
             }.bind(this);
             sentence.insertBefore(button, sentence.firstChild);
         }
+
+        // Add PlayAll button
+        var playButton = createButton("Play", player.play.bind(player));
+        var pauseButton = createButton("Pause", player.pause.bind(player));
+        var resumeButton = createButton("Resume", player.resume.bind(player));
+        var skipButton = createButton("Skip", player.skip.bind(player));
+
+        var playerControls = document.createElement("div");
+        playerControls.style.position = "fixed";
+        playerControls.style.bottom = "0px";
+        playerControls.style.left = "0px";
+        playerControls.style.fontSize = "8px";
+        playerControls.appendChild(playButton);
+        playerControls.appendChild(pauseButton);
+        playerControls.appendChild(resumeButton);
+        playerControls.appendChild(skipButton);
+        document.body.appendChild(playerControls);
     }
 
-    function speakBatched(text) {
-        // id for setTimeout(speechSynthesisRefresher)
-        var refreshId;
-
-        if (text.length == 0) {
-            return;
-        }
-
-        var segment = text.substring(0, 10);
-        var remainder = text.substring(10);
-
-        // Cancel any on-going speeches
-        // This also prevents a bug where speechSynthesis froze in a 'playing' state but isn't advancing
-        speechSynthesis.cancel();
-
-        var utter = new SpeechSynthesisUtterance();
-        utter.text = segment;
-        utter.lang = extensionSettings.lang;
-        utter.pitch = extensionSettings.pitch;
-        utter.rate = extensionSettings.rate;
-        utter.volume = extensionSettings.volume;
-        var voices = speechSynthesis.getVoices();
-        for (var v of voices) {
-            if (v.name == extensionSettings.voice) {
-                utter.voice = v;
-            }
-        }
-
-        utter.onend = function (e) {
-            speakBatched(remainder);
-        }.bind(this);
-
-        speechSynthesis.speak(utter);
+    function createButton(name, onclick) {
+        var button = document.createElement("button");
+        button.textContent = name;
+        button.style.height = "2em";
+        button.style.width = "5em";
+        button.style.color = "black";
+        button.style.fontSize = "1.25em";
+        button.onclick = onclick;
+        return button;
     }
 
-    function speak(text) {
-        // id for setTimeout(speechSynthesisRefresher)
-        var refreshId;
-
-        // Cancel any on-going speeches
-        // This also prevents a bug where speechSynthesis froze in a 'playing' state but isn't advancing
-        speechSynthesis.cancel();
-
-        var utter = new SpeechSynthesisUtterance();
-        utter.text = text;
-        utter.lang = extensionSettings.lang;
-        utter.pitch = extensionSettings.pitch;
-        utter.rate = extensionSettings.rate;
-        utter.volume = extensionSettings.volume;
-        var voices = speechSynthesis.getVoices();
-        for (var v of voices) {
-            if (v.name == extensionSettings.voice) {
-                utter.voice = v;
-            }
-        }
-
-        utter.onstart = function (e) {
-            speechSynthesisRefresher();
-        }
-
-        utter.onend = function (e) {
-            clearTimeout(refreshId);
-        }
-
-        speechSynthesis.speak(utter);
-
-        // There's a bug where SpeechSynthesis stops working if the text lasts longer than X seconds (15 seconds?). The solution is to never
-        // let SpeechSynthesis run for that long by setting an interval to continuously pause/resume until speech is complete.
-        function speechSynthesisRefresher() {
-            //speechSynthesis.pause();
-            speechSynthesis.resume();
-            refreshId = setTimeout(speechSynthesisRefresher, 500);
-        }
+    function scrollToCenter(element) {
+        window.scrollBy(0, element.getBoundingClientRect().top - (window.innerHeight >> 1));
     }
 
     function loadSettings(callback) {
@@ -131,11 +111,17 @@
             });
     }
 
-
     function onSettingsChanged(changes, namespace) {
         for (key in changes) {
-            extensionSettings[key] = changes[key].newValue;
+            extensionSettings[key] = changes[key].newValue;            
         }
+        if (player) {
+            player.lang = extensionSettings.lang;
+            player.voice = extensionSettings.voice;
+            player.pitch = extensionSettings.pitch;
+            player.rate = extensionSettings.rate;
+            player.volume = extensionSettings.volume;
+        }        
     }
 
 }())
